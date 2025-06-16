@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Film, Search, Menu, X } from 'lucide-react';
+import { Film, Search, Menu, X, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
@@ -50,6 +50,13 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors hover-glow"
+              >
+                <User className="w-5 h-5" />
+                Profile
+              </Link>
             </div>
           </div>
 
@@ -84,6 +91,14 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <User className="w-5 h-5" />
+                Profile
+              </Link>
             </div>
           </div>
         )}

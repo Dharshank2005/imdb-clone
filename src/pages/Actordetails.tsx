@@ -1,4 +1,3 @@
-import { div } from "framer-motion/client";
 import { Award, Instagram, Star, Twitter } from "lucide-react";
 import React from "react";
 import { Link, useParams } from "react-router-dom";

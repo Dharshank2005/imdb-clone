@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, Star } from "lucide-react";
+import { SlidersHorizontal, Star } from "lucide-react";
 import React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
