@@ -12,7 +12,6 @@ import ReviewCard from "../components/ReviewCard.tsx"
 import ReviewEditor from "../components/ReviewEditor.tsx"
 import { dbUtils } from "../utils/database.tsx"
 
-// Define Movie, RatedMovie, and Review types
 interface Movie {
   id: string
   title: string
@@ -73,7 +72,6 @@ const ProfileEnhanced: React.FC = () => {
     review?: Review
   }>({ isOpen: false })
 
-  // Show spinner while loading or if no profile
   if (loading || !userProfile) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -93,7 +91,6 @@ const ProfileEnhanced: React.FC = () => {
 
   const handleProfileSave = async (updatedProfile: UserProfile) => {
     updateUserProfile(updatedProfile)
-    // Save to database
     try {
       await dbUtils.saveUserProfile(updatedProfile)
     } catch (error) {
@@ -104,7 +101,6 @@ const ProfileEnhanced: React.FC = () => {
 
   const handleRatingChange = async (movieId: string, newRating: number) => {
     rateMovie(movieId, newRating)
-    // Save to database
     try {
       await dbUtils.saveRatedMovies(ratedMovies)
     } catch (error) {
@@ -115,11 +111,9 @@ const ProfileEnhanced: React.FC = () => {
   const handleReviewSave = async (reviewData: any) => {
     try {
       if (reviewEditor.review) {
-        // Update existing review
         updateReview(reviewEditor.review.id, reviewData)
         await dbUtils.updateReview(reviewEditor.review.id, reviewData)
       } else {
-        // Add new review
         const newReview = addReview(reviewData.movieId, reviewData)
         await dbUtils.saveReview(newReview)
       }
@@ -159,7 +153,6 @@ const ProfileEnhanced: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Profile Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -208,7 +201,6 @@ const ProfileEnhanced: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Navigation Tabs */}
       <div className="flex gap-2 mb-8 overflow-x-auto">
         {tabs.map((tab) => (
           <motion.button
@@ -226,7 +218,6 @@ const ProfileEnhanced: React.FC = () => {
         ))}
       </div>
 
-      {/* Tab Content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
@@ -238,7 +229,6 @@ const ProfileEnhanced: React.FC = () => {
         >
           {activeTab === "overview" && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Movies Watched */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl p-6 border border-yellow-500/30"
@@ -251,7 +241,6 @@ const ProfileEnhanced: React.FC = () => {
                 <p className="text-gray-400 text-sm">Total movies rated</p>
               </motion.div>
 
-              {/* Average Rating */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl p-6 border border-purple-500/30"
@@ -268,7 +257,6 @@ const ProfileEnhanced: React.FC = () => {
                 <p className="text-gray-400 text-sm">Out of 5 stars</p>
               </motion.div>
 
-              {/* Reviews Written */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl p-6 border border-blue-500/30"
@@ -281,7 +269,6 @@ const ProfileEnhanced: React.FC = () => {
                 <p className="text-gray-400 text-sm">Total reviews</p>
               </motion.div>
 
-              {/* Favorite Genres */}
               <div className="md:col-span-2 lg:col-span-3 bg-gray-800/50 rounded-xl p-6">
                 <h3 className="text-xl font-semibold mb-4">Favorite Genres</h3>
                 <div className="flex flex-wrap gap-2">
@@ -404,7 +391,6 @@ const ProfileEnhanced: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Profile Editor Modal */}
       <AnimatePresence>
         {isEditingProfile && (
           <ProfileEditorEnhanced
@@ -415,7 +401,6 @@ const ProfileEnhanced: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Review Editor Modal */}
       <AnimatePresence>
         {reviewEditor.isOpen && reviewEditor.movie && (
           <ReviewEditor

@@ -14,10 +14,8 @@ export const useUserData = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Initialize local storage first
         initializeUserData()
 
-        // Try to load from database first, fallback to local storage
         const [dbProfile, dbWatchlist, dbRatedMovies, dbReviews] = await Promise.allSettled([
           dbUtils.getUserProfile(),
           dbUtils.getWatchlist(),
@@ -25,7 +23,6 @@ export const useUserData = () => {
           dbUtils.getReviews(),
         ])
 
-        // Use database data if available, otherwise use local storage
         setUserProfile(
           dbProfile.status === "fulfilled" && dbProfile.value
             ? dbProfile.value
@@ -51,7 +48,6 @@ export const useUserData = () => {
         )
       } catch (error) {
         console.error("Error loading data:", error)
-        // Fallback to local storage only
         initializeUserData()
         setUserProfile(loadFromStorage(STORAGE_KEYS.USER_PROFILE))
         setWatchlist(loadFromStorage(STORAGE_KEYS.WATCHLIST, []))
@@ -122,13 +118,15 @@ export const useUserData = () => {
         ratedAt: new Date().toISOString(),
       }
     } else {
-      // Find movie from watchlist or create basic movie object
-      const movie = watchlist.find((m) => m.id === movieId) || {
-        id: movieId,
-        title: "Unknown Movie",
-        image: "/placeholder.svg?height=300&width=200",
-        year: new Date().getFullYear(),
-      }
+      // Find movie from MOVIES data or create basic movie object
+      const { MOVIES } = await import("../data/movies")
+      const movie = MOVIES.find((m) => m.id === movieId) ||
+        watchlist.find((m) => m.id === movieId) || {
+          id: movieId,
+          title: "Unknown Movie",
+          image: "/placeholder.svg?height=300&width=200",
+          year: new Date().getFullYear(),
+        }
       newRatedMovies = [
         ...ratedMovies,
         {
@@ -145,6 +143,11 @@ export const useUserData = () => {
   const updateReviews = async (newReviews) => {
     setReviews(newReviews)
     saveToStorage(STORAGE_KEYS.REVIEWS, newReviews)
+    try {
+      await dbUtils.saveReviews(newReviews)
+    } catch (error) {
+      console.error("Failed to save reviews to database:", error)
+    }
   }
 
   const addReview = (movieId, reviewData) => {

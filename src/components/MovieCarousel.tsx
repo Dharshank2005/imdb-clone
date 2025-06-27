@@ -1,23 +1,22 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import MovieCard from "./MovieCard.tsx";
+"use client"
+
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useState } from "react"
+import { Link } from "react-router-dom"
+import MovieCard from "./MovieCard.tsx"
 
 const MovieCarousel = ({ movies }) => {
-  const [startIndex, setStartIndex] = useState(0);
-  const visibleMovies = 4;
+  const [startIndex, setStartIndex] = useState(0)
+  const visibleMovies = 4
 
   const nextSlide = () => {
-    setStartIndex((prev) =>
-      prev + visibleMovies >= movies.length ? 0 : prev + 1
-    );
-  };
+    setStartIndex((prev) => (prev + visibleMovies >= movies.length ? 0 : prev + 1))
+  }
 
   const prevSlide = () => {
-    setStartIndex((prev) =>
-      prev === 0 ? Math.max(0, movies.length - visibleMovies) : prev - 1
-    );
-  };
+    setStartIndex((prev) => (prev === 0 ? Math.max(0, movies.length - visibleMovies) : prev - 1))
+  }
+
   return (
     <div className="relative group">
       <div className="overflow-hidden">
@@ -28,10 +27,7 @@ const MovieCarousel = ({ movies }) => {
           }}
         >
           {movies.map((movie) => (
-            <div
-              key={movie.id}
-              className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 flex-shrink-0 p-2"
-            >
+            <div key={movie.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 flex-shrink-0 p-2">
               <Link to={`/movie/${movie.id}`}>
                 <MovieCard {...movie} />
               </Link>
@@ -57,7 +53,7 @@ const MovieCarousel = ({ movies }) => {
         </>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default MovieCarousel;
+export default MovieCarousel

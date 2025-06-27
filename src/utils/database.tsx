@@ -1,4 +1,3 @@
-// Database integration utilities with fallback to local storage
 interface DatabaseConfig {
   apiUrl?: string
   apiKey?: string
@@ -15,7 +14,6 @@ class DatabaseManager {
       ...config,
     }
 
-    // Listen for online/offline events
     window.addEventListener("online", () => {
       this.isOnline = true
       this.syncLocalChanges()
@@ -26,7 +24,6 @@ class DatabaseManager {
     })
   }
 
-  // Generic CRUD operations with proper typing
   async create<T extends Record<string, any>>(collection: string, data: T): Promise<T & { id: string }> {
     try {
       if (this.isOnline && this.config.apiUrl) {
@@ -43,12 +40,10 @@ class DatabaseManager {
 
         const result = (await response.json()) as T & { id: string }
 
-        // Also save to local storage as backup
         this.saveToLocalStorage(collection, result)
 
         return result
       } else {
-        // Fallback to local storage
         return this.createInLocalStorage(collection, data)
       }
     } catch (error) {
@@ -75,12 +70,10 @@ class DatabaseManager {
 
         const result = (await response.json()) as T
 
-        // Cache in local storage
         this.saveToLocalStorage(`${collection}_${id}`, result)
 
         return result
       } else {
-        // Fallback to local storage
         return this.readSingleFromLocalStorage<T>(collection, id)
       }
     } catch (error) {
@@ -102,12 +95,10 @@ class DatabaseManager {
 
         const result = (await response.json()) as T[]
 
-        // Cache in local storage
         this.saveToLocalStorage(collection, result)
 
         return result
       } else {
-        // Fallback to local storage
         return this.readManyFromLocalStorage<T>(collection)
       }
     } catch (error) {
@@ -132,12 +123,10 @@ class DatabaseManager {
 
         const result = (await response.json()) as T
 
-        // Update local storage
         this.saveToLocalStorage(`${collection}_${id}`, result)
 
         return result
       } else {
-        // Fallback to local storage
         return this.updateInLocalStorage<T>(collection, id, data)
       }
     } catch (error) {
@@ -158,12 +147,10 @@ class DatabaseManager {
 
         if (!response.ok) throw new Error("Network request failed")
 
-        // Remove from local storage
         this.removeFromLocalStorage(`${collection}_${id}`)
 
         return true
       } else {
-        // Fallback to local storage
         return this.deleteFromLocalStorage(collection, id)
       }
     } catch (error) {
@@ -172,7 +159,6 @@ class DatabaseManager {
     }
   }
 
-  // Local storage operations with proper typing
   private createInLocalStorage<T extends Record<string, any>>(collection: string, data: T): T & { id: string } {
     const id = Date.now().toString()
     const item = { ...data, id } as T & { id: string }
@@ -241,12 +227,10 @@ class DatabaseManager {
     }
   }
 
-  // Sync local changes when coming back online
   private async syncLocalChanges(): Promise<void> {
     if (!this.config.apiUrl) return
 
     try {
-      // Get all pending changes from localStorage
       const pendingChanges = this.getFromLocalStorage<any[]>("pending_changes", [])
 
       for (const change of pendingChanges) {
@@ -267,14 +251,12 @@ class DatabaseManager {
         }
       }
 
-      // Clear pending changes
       this.removeFromLocalStorage("pending_changes")
     } catch (error) {
       console.error("Failed to sync local changes:", error)
     }
   }
 
-  // Queue changes for later sync when offline
   private queueChange(operation: string, collection: string, id?: string, data?: any): void {
     const pendingChanges = this.getFromLocalStorage<any[]>("pending_changes", [])
     pendingChanges.push({
@@ -288,15 +270,10 @@ class DatabaseManager {
   }
 }
 
-// Export singleton instance
 export const db = new DatabaseManager({
-  // Configure with your database settings
-  // apiUrl: process.env.NEXT_PUBLIC_API_URL,
-  // apiKey: process.env.NEXT_PUBLIC_API_KEY,
   useLocalStorage: true,
 })
 
-// Define proper types for our data structures
 interface UserProfile {
   id?: string
   username: string
@@ -328,9 +305,7 @@ interface Review {
   updatedAt?: string
 }
 
-// Utility functions for common operations with proper typing
 export const dbUtils = {
-  // User profile operations
   async saveUserProfile(profile: UserProfile): Promise<UserProfile> {
     return await db.update<UserProfile>("user_profiles", "current_user", profile)
   },
@@ -339,7 +314,6 @@ export const dbUtils = {
     return await db.readSingle<UserProfile>("user_profiles", "current_user")
   },
 
-  // Watchlist operations
   async saveWatchlist(watchlist: Movie[]): Promise<{ items: Movie[] }> {
     return await db.update<{ items: Movie[] }>("watchlists", "current_user", { items: watchlist })
   },
@@ -349,7 +323,6 @@ export const dbUtils = {
     return result?.items || []
   },
 
-  // Rated movies operations
   async saveRatedMovies(ratedMovies: Movie[]): Promise<{ items: Movie[] }> {
     return await db.update<{ items: Movie[] }>("rated_movies", "current_user", { items: ratedMovies })
   },
@@ -359,7 +332,6 @@ export const dbUtils = {
     return result?.items || []
   },
 
-  // Reviews operations
   async saveReview(review: Omit<Review, "id">): Promise<Review> {
     return await db.create<Omit<Review, "id">>("reviews", review)
   },
@@ -374,5 +346,9 @@ export const dbUtils = {
 
   async getReviews(): Promise<Review[]> {
     return await db.readMany<Review>("reviews")
+  },
+
+  async saveReviews(reviews: Review[]): Promise<{ items: Review[] }> {
+    return await db.update<{ items: Review[] }>("reviews_collection", "current_user", { items: reviews })
   },
 }

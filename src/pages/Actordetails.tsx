@@ -1,6 +1,7 @@
-import { Award, Instagram, Star, Twitter } from "lucide-react";
-import React from "react";
-import { Link, useParams } from "react-router-dom";
+"use client"
+
+import { Award, Instagram, Star, Twitter } from "lucide-react"
+import { Link, useParams } from "react-router-dom"
 
 const Actordetails = () => {
   const actors = [
@@ -13,10 +14,8 @@ const Actordetails = () => {
       height: "5' 10\" (1.78 m)",
       biography:
         "Timothée Hal Chalamet is an American actor. He has received various accolades, including nominations for an Academy Award, two Golden Globe Awards, and three BAFTA Film Awards. Born and raised in New York City, he began his career on the stage and in television productions, appearing in the drama series Homeland in 2012.",
-      image:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80",
-      coverImage:
-        "https://images.unsplash.com/photo-1492446845049-9c50cc313f00?auto=format&fit=crop&w=2000&q=80",
+      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80",
+      coverImage: "https://images.unsplash.com/photo-1492446845049-9c50cc313f00?auto=format&fit=crop&w=2000&q=80",
       awards: [
         {
           name: "Academy Award Nomination",
@@ -49,8 +48,7 @@ const Actordetails = () => {
           role: "Paul Atreides",
           year: 2024,
           rating: 8.8,
-          image:
-            "https://images.unsplash.com/photo-1534809027769-b00d750a6bac?auto=format&fit=crop&w=800&q=80",
+          image: "https://images.unsplash.com/photo-1534809027769-b00d750a6bac?auto=format&fit=crop&w=800&q=80",
         },
         {
           id: 2,
@@ -58,8 +56,7 @@ const Actordetails = () => {
           role: "Willy Wonka",
           year: 2023,
           rating: 7.2,
-          image:
-            "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80",
+          image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80",
         },
         {
           id: 3,
@@ -67,8 +64,7 @@ const Actordetails = () => {
           role: "Paul Atreides",
           year: 2021,
           rating: 8.0,
-          image:
-            "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=80",
+          image: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=80",
         },
       ],
       stats: {
@@ -95,10 +91,8 @@ const Actordetails = () => {
       height: "5' 10\" (1.78 m)",
       biography:
         "Zendaya is an American actress and singer. She began her career as a child model and backup dancer before gaining prominence for her role as Rocky Blue on the Disney Channel sitcom Shake It Up. She has gone on to star in numerous acclaimed films and television series.",
-      image:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
-      coverImage:
-        "https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=2000&q=80",
+      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+      coverImage: "https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=2000&q=80",
       awards: [
         {
           name: "Emmy Award",
@@ -125,8 +119,7 @@ const Actordetails = () => {
           role: "Chani",
           year: 2024,
           rating: 8.8,
-          image:
-            "https://images.unsplash.com/photo-1534809027769-b00d750a6bac?auto=format&fit=crop&w=800&q=80",
+          image: "https://images.unsplash.com/photo-1534809027769-b00d750a6bac?auto=format&fit=crop&w=800&q=80",
         },
         {
           id: 4,
@@ -134,8 +127,7 @@ const Actordetails = () => {
           role: "MJ",
           year: 2021,
           rating: 8.2,
-          image:
-            "https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=800&q=80",
+          image: "https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=800&q=80",
         },
       ],
       stats: {
@@ -153,9 +145,9 @@ const Actordetails = () => {
         },
       ],
     },
-  ];
-  const { id } = useParams();
-  const actor = actors.find((m) => m.id === Number(id)) || actors[0];
+  ]
+  const { id } = useParams()
+  const actor = actors.find((m) => m.id === Number(id)) || actors[0]
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="relative h-[400px] mb-8 rounded-xl overflow-hidden">
@@ -168,7 +160,7 @@ const Actordetails = () => {
         <div className="relative h-full container flex items-end pb-8">
           <div className="flex items-end gap-8">
             <img
-              src={actor.image}
+              src={actor.image || "/placeholder.svg"}
               alt={actor.name}
               className="w-48 h-48 rounded-xl object-cover border-4 border-gray-900"
             />
@@ -212,16 +204,10 @@ const Actordetails = () => {
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="font-semibold mb-4">Social Media</h2>
               <div className="flex gap-4">
-                <a
-                  href={actor.socialMedia.instagram}
-                  className="text-gray-400 hover:text-white"
-                >
+                <a href={actor.socialMedia.instagram} className="text-gray-400 hover:text-white">
                   <Instagram className="w-6 h-6" />
                 </a>
-                <a
-                  href={actor.socialMedia.twitter}
-                  className="text-gray-400 hover:text-white"
-                >
+                <a href={actor.socialMedia.twitter} className="text-gray-400 hover:text-white">
                   <Twitter className="w-6 h-6" />
                 </a>
               </div>
@@ -232,19 +218,14 @@ const Actordetails = () => {
         <div className="md:col-span-2">
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Biography</h2>
-            <p className="text-gray-300 text-lg leading-relaxed">
-              {actor.biography}
-            </p>
+            <p className="text-gray-300 text-lg leading-relaxed">{actor.biography}</p>
           </section>
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Awards & Nominations</h2>
             <div className="grid gap-4">
               {actor.awards.map((award, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 bg-gray-800 p-4 rounded-xl"
-                >
+                <div key={index} className="flex items-center gap-3 bg-gray-800 p-4 rounded-xl">
                   <Award className="w-5 h-5 text-yellow-500" />
                   <div>
                     <span className="font-semibold">{award.name}</span>
@@ -267,21 +248,17 @@ const Actordetails = () => {
                   <div className="bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform">
                     <div className="relative aspect-[2/3]">
                       <img
-                        src={movie.image}
+                        src={movie.image || "/placeholder.svg"}
                         alt={movie.title}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute top-4 right-4 bg-black/60 px-2 py-1 rounded-md flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="text-yellow-500 font-medium">
-                          {movie.rating}
-                        </span>
+                        <span className="text-yellow-500 font-medium">{movie.rating}</span>
                       </div>
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-1">
-                        {movie.title}
-                      </h3>
+                      <h3 className="font-semibold text-lg mb-1">{movie.title}</h3>
                       <p className="text-gray-400">as {movie.role}</p>
                       <p className="text-gray-500 text-sm">{movie.year}</p>
                     </div>
@@ -293,7 +270,7 @@ const Actordetails = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Actordetails;
+export default Actordetails

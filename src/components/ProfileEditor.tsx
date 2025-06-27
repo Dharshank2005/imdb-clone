@@ -5,13 +5,11 @@ import { useState, useRef, useEffect, type ChangeEvent, type FormEvent } from "r
 import { motion, AnimatePresence } from "framer-motion"
 import { Camera, Save, X, User, Mail, FileText, Settings, Eye, AlertCircle, CheckCircle } from "lucide-react"
 
-// Define the shape of preferences
 type Preferences = {
   favoriteGenres: string[]
   notifications: Record<string, boolean>
 }
 
-// Define the user profile interface
 export interface UserProfile {
   username: string
   email: string
@@ -21,7 +19,6 @@ export interface UserProfile {
   joinDate: string
 }
 
-// Define the component props interface
 interface ProfileEditorProps {
   userProfile: UserProfile
   onSave: (updatedProfile: UserProfile) => void
@@ -45,7 +42,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
   const [isValidating, setIsValidating] = useState<Record<string, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Real-time validation
   const validateField = (field: keyof UserProfile, value: string): { isValid: boolean; error: string } => {
     switch (field) {
       case "username":
@@ -71,7 +67,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
     }
   }
 
-  // Real-time validation with debounce
   useEffect(() => {
     const timeouts: Record<string, NodeJS.Timeout> = {}
 
@@ -142,7 +137,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
 
-    // Final validation
     const finalErrors: Record<string, string> = {}
     ;["username", "email", "bio"].forEach((field) => {
       const validation = validateField(field as keyof UserProfile, formData[field as keyof UserProfile] as string)
@@ -191,9 +185,7 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Form Section */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Profile Picture */}
             <div className="flex items-center gap-6">
               <div className="relative">
                 <img
@@ -223,7 +215,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
               </div>
             </div>
 
-            {/* Basic Information */}
             <div className="grid gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -298,7 +289,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
               </div>
             </div>
 
-            {/* Bio */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 <FileText size={16} className="inline mr-2" />
@@ -321,7 +311,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
               </div>
             </div>
 
-            {/* Preferences */}
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <Settings size={20} className="mr-2" /> Preferences
@@ -374,7 +363,6 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-4 pt-4">
               <button
                 type="submit"
@@ -392,13 +380,11 @@ const ProfileEditorEnhanced: React.FC<ProfileEditorProps> = ({ userProfile, onSa
                 onClick={onCancel}
                 className="flex-1 bg-gray-700 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
               >
-                {" "}
                 Cancel
               </button>
             </div>
           </form>
 
-          {/* Preview Section */}
           <AnimatePresence>
             {showPreview && (
               <motion.div

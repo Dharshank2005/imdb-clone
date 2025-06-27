@@ -1,4 +1,3 @@
-// Local storage utilities for persistent data
 export const STORAGE_KEYS = {
   USER_PROFILE: "moviedb_user_profile",
   WATCHLIST: "moviedb_watchlist",
@@ -36,7 +35,6 @@ export const removeFromStorage = (key) => {
   }
 }
 
-// Initialize default user profile
 export const getDefaultUserProfile = () => ({
   id: "user_1",
   username: "Movie Enthusiast",
@@ -60,7 +58,6 @@ export const getDefaultUserProfile = () => ({
   },
 })
 
-// Initialize default data
 export const initializeUserData = () => {
   if (!loadFromStorage(STORAGE_KEYS.USER_PROFILE)) {
     saveToStorage(STORAGE_KEYS.USER_PROFILE, getDefaultUserProfile())
