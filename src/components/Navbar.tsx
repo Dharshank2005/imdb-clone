@@ -13,12 +13,13 @@ const Navbar = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      navigate(`/movies?search=${encodeURIComponent(searchQuery)}`)
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
     }
   }
 
   const navItems = [
     { label: "Movies", path: "/movies" },
+    { label: "Search", path: "/search" }, // Add this line
     { label: "Top Rated", path: "/top-rated" },
     { label: "Coming Soon", path: "/coming-soon" },
   ]
