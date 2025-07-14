@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useCallback, useEffect } from "react"
+import { createContext, useContext, useReducer, useCallback, useRef, useEffect } from "react"
 import { MOVIES } from "../data/movies"
 
-interface SearchFilters {
+export interface SearchFilters {
   query: string
   genres: string[]
   yearRange: [number, number]
@@ -14,46 +14,35 @@ interface SearchFilters {
   sortOrder: "asc" | "desc"
 }
 
-interface SearchResult {
-  id: string
+export interface SearchResult {
   title: string
-  rating: number
-  image: string
-  year: number
   genre: string[]
+  cast: { name: string }[]
   director: string
-  cast: Array<{ name: string; role: string }>
+  year: number
+  rating: number
   relevanceScore?: number
 }
 
 interface SearchState {
   filters: SearchFilters
   results: SearchResult[]
-  isLoading: boolean
-  isSearching: boolean
-  totalResults: number
-  currentPage: number
+  total: number
+  page: number
   hasMore: boolean
-  cache: Record<string, { results: SearchResult[]; timestamp: number; totalResults: number }>
+  isLoading: boolean
   recentSearches: string[]
-  searchHistory: Array<{ query: string; timestamp: number; resultsCount: number }>
-  suggestions: string[]
+  cache: Map<string, { results: SearchResult[]; total: number; timestamp: number }>
 }
 
 type SearchAction =
   | { type: "SET_FILTERS"; payload: Partial<SearchFilters> }
-  | { type: "SET_RESULTS"; payload: { results: SearchResult[]; totalResults: number; page: number } }
-  | { type: "APPEND_RESULTS"; payload: { results: SearchResult[]; hasMore: boolean } }
+  | { type: "SET_RESULTS"; payload: { results: SearchResult[]; total: number; page: number; append?: boolean } }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_SEARCHING"; payload: boolean }
-  | { type: "CLEAR_RESULTS" }
-  | { type: "SET_CACHE"; payload: { key: string; data: { results: SearchResult[]; totalResults: number } } }
   | { type: "ADD_RECENT_SEARCH"; payload: string }
-  | { type: "ADD_SEARCH_HISTORY"; payload: { query: string; resultsCount: number } }
-  | { type: "SET_SUGGESTIONS"; payload: string[] }
-  | { type: "RESET_SEARCH" }
+  | { type: "CLEAR_RESULTS" }
 
-const initialFilters: SearchFilters = {
+const INITIAL_FILTERS: SearchFilters = {
   query: "",
   genres: [],
   yearRange: [1900, new Date().getFullYear()],
@@ -63,23 +52,19 @@ const initialFilters: SearchFilters = {
   sortOrder: "desc",
 }
 
-const initialState: SearchState = {
-  filters: initialFilters,
+const INITIAL_STATE: SearchState = {
+  filters: INITIAL_FILTERS,
   results: [],
-  isLoading: false,
-  isSearching: false,
-  totalResults: 0,
-  currentPage: 1,
+  total: 0,
+  page: 1,
   hasMore: false,
-  cache: {},
+  isLoading: false,
   recentSearches: [],
-  searchHistory: [],
-  suggestions: [],
+  cache: new Map(),
 }
 
+const RESULTS_PER_PAGE = 12
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-const MAX_RECENT_SEARCHES = 10
-const MAX_SEARCH_HISTORY = 50
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -87,458 +72,345 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
       return {
         ...state,
         filters: { ...state.filters, ...action.payload },
+        page: 1,
       }
-
-    case "SET_RESULTS":
+    case "SET_RESULTS": {
+      const { results, total, page, append } = action.payload
       return {
         ...state,
-        results: action.payload.results,
-        totalResults: action.payload.totalResults,
-        currentPage: action.payload.page,
-        hasMore: action.payload.results.length < action.payload.totalResults,
-        isLoading: false,
-        isSearching: false,
-      }
-
-    case "APPEND_RESULTS":
-      return {
-        ...state,
-        results: [...state.results, ...action.payload.results],
-        hasMore: action.payload.hasMore,
-        currentPage: state.currentPage + 1,
+        results: append ? [...state.results, ...results] : results,
+        total,
+        page,
+        hasMore: results.length === RESULTS_PER_PAGE && page * RESULTS_PER_PAGE < total,
         isLoading: false,
       }
-
+    }
     case "SET_LOADING":
-      return {
-        ...state,
-        isLoading: action.payload,
-      }
-
-    case "SET_SEARCHING":
-      return {
-        ...state,
-        isSearching: action.payload,
-      }
-
-    case "CLEAR_RESULTS":
-      return {
-        ...state,
-        results: [],
-        totalResults: 0,
-        currentPage: 1,
-        hasMore: false,
-        isLoading: false,
-        isSearching: false,
-      }
-
-    case "SET_CACHE":
-      return {
-        ...state,
-        cache: {
-          ...state.cache,
-          [action.payload.key]: {
-            ...action.payload.data,
-            timestamp: Date.now(),
-          },
-        },
-      }
-
+      return { ...state, isLoading: action.payload }
     case "ADD_RECENT_SEARCH":
-      const newRecentSearches = [action.payload, ...state.recentSearches.filter((s) => s !== action.payload)].slice(
-        0,
-        MAX_RECENT_SEARCHES,
-      )
       return {
         ...state,
-        recentSearches: newRecentSearches,
+        recentSearches: [action.payload, ...state.recentSearches.filter((s) => s !== action.payload)].slice(0, 10),
       }
-
-    case "ADD_SEARCH_HISTORY":
-      const newHistoryItem = {
-        query: action.payload.query,
-        timestamp: Date.now(),
-        resultsCount: action.payload.resultsCount,
-      }
-      const newHistory = [newHistoryItem, ...state.searchHistory].slice(0, MAX_SEARCH_HISTORY)
-      return {
-        ...state,
-        searchHistory: newHistory,
-      }
-
-    case "SET_SUGGESTIONS":
-      return {
-        ...state,
-        suggestions: action.payload,
-      }
-
-    case "RESET_SEARCH":
-      return {
-        ...state,
-        filters: initialFilters,
-        results: [],
-        totalResults: 0,
-        currentPage: 1,
-        hasMore: false,
-        isLoading: false,
-        isSearching: false,
-      }
-
+    case "CLEAR_RESULTS":
+      return { ...state, results: [], total: 0, page: 1, hasMore: false }
     default:
       return state
   }
 }
 
+// Enhanced search algorithm with better relevance scoring
+function calculateRelevanceScore(movie: any, query: string): number {
+  const queryLower = query.toLowerCase()
+  const titleLower = movie.title.toLowerCase()
+  let score = 0
+
+  // Exact title match gets highest score
+  if (titleLower === queryLower) {
+    score += 1000
+  }
+  // Title starts with query
+  else if (titleLower.startsWith(queryLower)) {
+    score += 800
+  }
+  // Title contains query
+  else if (titleLower.includes(queryLower)) {
+    score += 600
+  }
+
+  // Check individual words
+  const queryWords = queryLower.split(/\s+/).filter(Boolean)
+  const titleWords = titleLower.split(/\s+/)
+
+  queryWords.forEach((word) => {
+    titleWords.forEach((titleWord) => {
+      if (titleWord === word) score += 400
+      else if (titleWord.startsWith(word)) score += 200
+      else if (titleWord.includes(word)) score += 100
+    })
+  })
+
+  // Genre matches
+  movie.genre.forEach((genre: string) => {
+    if (genre.toLowerCase().includes(queryLower)) {
+      score += 300
+    }
+  })
+
+  // Cast matches
+  movie.cast.forEach((actor: any) => {
+    if (actor.name.toLowerCase().includes(queryLower)) {
+      score += 250
+    }
+  })
+
+  // Director match
+  if (movie.director.toLowerCase().includes(queryLower)) {
+    score += 200
+  }
+
+  // Boost score based on rating (higher rated movies get slight preference)
+  score += movie.rating * 10
+
+  // Boost newer movies slightly
+  const currentYear = new Date().getFullYear()
+  const yearBoost = Math.max(0, (movie.year - (currentYear - 10)) * 2)
+  score += yearBoost
+
+  return score
+}
+
+function filterAndSearchMovies(filters: SearchFilters): any[] {
+  let results = [...MOVIES]
+
+  // Apply filters first
+  if (filters.genres.length > 0) {
+    results = results.filter((movie) =>
+      filters.genres.some((genre) =>
+        movie.genre.some((movieGenre: string) => movieGenre.toLowerCase() === genre.toLowerCase()),
+      ),
+    )
+  }
+
+  if (filters.actors.length > 0) {
+    results = results.filter((movie) =>
+      filters.actors.some((actor) =>
+        movie.cast.some((castMember: any) => castMember.name.toLowerCase().includes(actor.toLowerCase())),
+      ),
+    )
+  }
+
+  results = results.filter((movie) => movie.year >= filters.yearRange[0] && movie.year <= filters.yearRange[1])
+  results = results.filter((movie) => movie.rating >= filters.ratingRange[0] && movie.rating <= filters.ratingRange[1])
+
+  // Apply search query: filter only matching movies
+  const query = filters.query.trim()
+  if (query) {
+    const qLower = query.toLowerCase()
+    results = results.filter((movie) =>
+      movie.title.toLowerCase().includes(qLower) ||
+      movie.genre.some((g: string) => g.toLowerCase().includes(qLower)) ||
+      movie.cast.some((c: any) => c.name.toLowerCase().includes(qLower)) ||
+      movie.director.toLowerCase().includes(qLower)
+    )
+  }
+
+  // Assign relevance scores
+  results = results.map((movie) => ({
+    ...movie,
+    relevanceScore: query ? calculateRelevanceScore(movie, query) : movie.rating * 10,
+  }))
+
+  // Sort results
+  const sortMultiplier = filters.sortOrder === "asc" ? 1 : -1
+  results.sort((a, b) => {
+    switch (filters.sortBy) {
+      case "rating":
+        return (a.rating - b.rating) * sortMultiplier
+      case "year":
+        return (a.year - b.year) * sortMultiplier
+      case "title":
+        return a.title.localeCompare(b.title) * sortMultiplier
+      case "relevance":
+      default:
+        return ((b.relevanceScore || 0) - (a.relevanceScore || 0)) * sortMultiplier
+    }
+  })
+
+  return results
+}
+
 interface SearchContextType {
   state: SearchState
   setFilters: (filters: Partial<SearchFilters>) => void
-  search: (loadMore?: boolean) => Promise<void>
+  search: (loadMore?: boolean) => void
   clearResults: () => void
-  resetSearch: () => void
   getSuggestions: (query: string) => string[]
-  getCachedResults: (key: string) => { results: SearchResult[]; totalResults: number } | null
 }
 
-const SearchContext = createContext<SearchContextType | undefined>(undefined)
+const SearchContext = createContext<SearchContextType | null>(null)
 
-export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(searchReducer, initialState)
-
-  // Mock API simulation with realistic delays
-  const mockApiCall = useCallback(
-    async (filters: SearchFilters, page = 1): Promise<{ results: SearchResult[]; totalResults: number }> => {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, Math.random() * 500 + 200))
-
-      let filteredMovies = [...MOVIES]
-
-      // Apply text search if query exists
-      if (filters.query.trim()) {
-        const query = filters.query.toLowerCase()
-        filteredMovies = filteredMovies.filter(
-          (movie) =>
-            movie.title.toLowerCase().includes(query) ||
-            movie.director.toLowerCase().includes(query) ||
-            movie.genre.some((g) => g.toLowerCase().includes(query)) ||
-            movie.cast.some((actor) => actor.name.toLowerCase().includes(query)),
-        )
-
-        // Calculate relevance score for text searches
-        filteredMovies = filteredMovies.map((movie) => ({
-          ...movie,
-          relevanceScore: calculateRelevanceScore(movie, query),
-        }))
-      }
-
-      // Apply genre filter
-      if (filters.genres.length > 0) {
-        filteredMovies = filteredMovies.filter((movie) => filters.genres.some((genre) => movie.genre.includes(genre)))
-      }
-
-      // Apply year range filter
-      if (filters.yearRange[0] !== 1900 || filters.yearRange[1] !== new Date().getFullYear()) {
-        filteredMovies = filteredMovies.filter(
-          (movie) => movie.year >= filters.yearRange[0] && movie.year <= filters.yearRange[1],
-        )
-      }
-
-      // Apply rating range filter
-      if (filters.ratingRange[0] !== 0 || filters.ratingRange[1] !== 10) {
-        filteredMovies = filteredMovies.filter(
-          (movie) => movie.rating >= filters.ratingRange[0] && movie.rating <= filters.ratingRange[1],
-        )
-      }
-
-      // Apply actor filter
-      if (filters.actors.length > 0) {
-        filteredMovies = filteredMovies.filter((movie) =>
-          filters.actors.some((actor) =>
-            movie.cast.some((castMember) => castMember.name.toLowerCase().includes(actor.toLowerCase())),
-          ),
-        )
-      }
-
-      // Apply sorting
-      filteredMovies.sort((a, b) => {
-        let comparison = 0
-        switch (filters.sortBy) {
-          case "relevance":
-            // If no query, sort by rating instead
-            if (!filters.query.trim()) {
-              comparison = b.rating - a.rating
-            } else {
-              comparison = (b.relevanceScore || 0) - (a.relevanceScore || 0)
-            }
-            break
-          case "rating":
-            comparison = b.rating - a.rating
-            break
-          case "year":
-            comparison = b.year - a.year
-            break
-          case "title":
-            comparison = a.title.localeCompare(b.title)
-            break
-        }
-        return filters.sortOrder === "asc" ? -comparison : comparison
-      })
-
-      const totalResults = filteredMovies.length
-      const startIndex = (page - 1) * 12
-      const endIndex = startIndex + 12
-      const paginatedResults = filteredMovies.slice(startIndex, endIndex)
-
-      return {
-        results: paginatedResults as SearchResult[],
-        totalResults,
-      }
-    },
-    [],
-  )
-
-  const calculateRelevanceScore = (movie: any, query: string): number => {
-    let score = 0
-    const lowerQuery = query.toLowerCase()
-
-    // Title match (highest weight)
-    if (movie.title.toLowerCase().includes(lowerQuery)) {
-      score += movie.title.toLowerCase().startsWith(lowerQuery) ? 100 : 50
-    }
-
-    // Director match
-    if (movie.director.toLowerCase().includes(lowerQuery)) {
-      score += 30
-    }
-
-    // Genre match
-    movie.genre.forEach((genre: string) => {
-      if (genre.toLowerCase().includes(lowerQuery)) {
-        score += 20
-      }
-    })
-
-    // Cast match
-    movie.cast.forEach((actor: any) => {
-      if (actor.name.toLowerCase().includes(lowerQuery)) {
-        score += 15
-      }
-    })
-
-    // Boost popular movies
-    score += movie.rating * 2
-
-    return score
-  }
-
-  const generateCacheKey = (filters: SearchFilters, page: number): string => {
-    return JSON.stringify({ ...filters, page })
-  }
-
-  const getCachedResults = useCallback(
-    (key: string): { results: SearchResult[]; totalResults: number } | null => {
-      const cached = state.cache[key]
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        return { results: cached.results, totalResults: cached.totalResults }
-      }
-      return null
-    },
-    [state.cache],
-  )
+export function SearchProvider({ children }: { children: React.ReactNode }) {
+  const [state, dispatch] = useReducer(searchReducer, INITIAL_STATE)
+  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const abortControllerRef = useRef<AbortController>()
 
   const setFilters = useCallback((filters: Partial<SearchFilters>) => {
     dispatch({ type: "SET_FILTERS", payload: filters })
   }, [])
 
-  const search = useCallback(
-    async (loadMore = false) => {
-      const hasFilters =
-        state.filters.genres.length > 0 ||
-        state.filters.actors.length > 0 ||
-        state.filters.yearRange[0] !== 1900 ||
-        state.filters.yearRange[1] !== new Date().getFullYear() ||
-        state.filters.ratingRange[0] !== 0 ||
-        state.filters.ratingRange[1] !== 10
-
-      // Only search if there's a query or active filters
-      if (!state.filters.query.trim() && !hasFilters && !loadMore) {
-        dispatch({ type: "CLEAR_RESULTS" })
-        return
-      }
-
-      const page = loadMore ? state.currentPage + 1 : 1
-      const cacheKey = generateCacheKey(state.filters, page)
-
-      // Check cache first
-      const cachedResult = getCachedResults(cacheKey)
-      if (cachedResult && !loadMore) {
-        dispatch({
-          type: "SET_RESULTS",
-          payload: {
-            results: cachedResult.results,
-            totalResults: cachedResult.totalResults,
-            page,
-          },
-        })
-        return
-      }
-
-      dispatch({ type: loadMore ? "SET_LOADING" : "SET_SEARCHING", payload: true })
-
-      try {
-        const result = await mockApiCall(state.filters, page)
-
-        // Cache the result
-        dispatch({
-          type: "SET_CACHE",
-          payload: {
-            key: cacheKey,
-            data: result,
-          },
-        })
-
-        if (loadMore) {
-          dispatch({
-            type: "APPEND_RESULTS",
-            payload: {
-              results: result.results,
-              hasMore: result.results.length === 12,
-            },
-          })
-        } else {
-          dispatch({
-            type: "SET_RESULTS",
-            payload: {
-              results: result.results,
-              totalResults: result.totalResults,
-              page,
-            },
-          })
-
-          // Add to search history if there's a query
-          if (state.filters.query.trim()) {
-            dispatch({
-              type: "ADD_RECENT_SEARCH",
-              payload: state.filters.query.trim(),
-            })
-            dispatch({
-              type: "ADD_SEARCH_HISTORY",
-              payload: {
-                query: state.filters.query.trim(),
-                resultsCount: result.totalResults,
-              },
-            })
-          }
-        }
-      } catch (error) {
-        console.error("Search failed:", error)
-        dispatch({ type: loadMore ? "SET_LOADING" : "SET_SEARCHING", payload: false })
-      }
-    },
-    [state.filters, state.currentPage, getCachedResults, mockApiCall],
-  )
-
   const clearResults = useCallback(() => {
     dispatch({ type: "CLEAR_RESULTS" })
-  }, [])
-
-  const resetSearch = useCallback(() => {
-    dispatch({ type: "RESET_SEARCH" })
   }, [])
 
   const getSuggestions = useCallback((query: string): string[] => {
     if (!query.trim()) return []
 
+    const queryLower = query.toLowerCase()
     const suggestions = new Set<string>()
-    const lowerQuery = query.toLowerCase()
 
-    // Movie titles
     MOVIES.forEach((movie) => {
-      if (movie.title.toLowerCase().includes(lowerQuery)) {
+      if (movie.title.toLowerCase().includes(queryLower)) {
         suggestions.add(movie.title)
       }
-    })
-
-    // Directors
-    MOVIES.forEach((movie) => {
-      if (movie.director.toLowerCase().includes(lowerQuery)) {
-        suggestions.add(movie.director)
-      }
-    })
-
-    // Actors
-    MOVIES.forEach((movie) => {
+      movie.genre.forEach((genre) => {
+        if (genre.toLowerCase().includes(queryLower)) {
+          suggestions.add(genre)
+        }
+      })
       movie.cast.forEach((actor) => {
-        if (actor.name.toLowerCase().includes(lowerQuery)) {
+        if (actor.name.toLowerCase().includes(queryLower)) {
           suggestions.add(actor.name)
         }
       })
-    })
-
-    // Genres
-    const allGenres = [...new Set(MOVIES.flatMap((movie) => movie.genre))]
-    allGenres.forEach((genre) => {
-      if (genre.toLowerCase().includes(lowerQuery)) {
-        suggestions.add(genre)
+      if (movie.director.toLowerCase().includes(queryLower)) {
+        suggestions.add(movie.director)
       }
     })
 
     return Array.from(suggestions).slice(0, 8)
   }, [])
 
-  // Load cached data on mount
-  useEffect(() => {
-    const savedRecentSearches = localStorage.getItem("moviedb_recent_searches")
-    const savedSearchHistory = localStorage.getItem("moviedb_search_history")
-
-    if (savedRecentSearches) {
-      try {
-        const recentSearches = JSON.parse(savedRecentSearches)
-        recentSearches.forEach((search: string) => {
-          dispatch({ type: "ADD_RECENT_SEARCH", payload: search })
-        })
-      } catch (error) {
-        console.error("Failed to load recent searches:", error)
+  const search = useCallback(
+    async (loadMore = false) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
       }
-    }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
 
-    if (savedSearchHistory) {
-      try {
-        const searchHistory = JSON.parse(savedSearchHistory)
-        searchHistory.forEach((item: any) => {
-          dispatch({
-            type: "ADD_SEARCH_HISTORY",
-            payload: { query: item.query, resultsCount: item.resultsCount },
+      const performSearch = async () => {
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
+        try {
+          dispatch({ type: "SET_LOADING", payload: true })
+
+          const cacheKey = JSON.stringify(state.filters)
+          const cached = state.cache.get(cacheKey)
+
+          if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+            const page = loadMore ? state.page + 1 : 1
+            const startIndex = (page - 1) * RESULTS_PER_PAGE
+            const endIndex = startIndex + RESULTS_PER_PAGE
+            const pageResults = cached.results.slice(startIndex, endIndex)
+
+            dispatch({
+              type: "SET_RESULTS",
+              payload: {
+                results: pageResults,
+                total: cached.total,
+                page,
+                append: loadMore,
+              },
+            })
+            return
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 300))
+
+          if (controller.signal.aborted) return
+
+          const allResults = filterAndSearchMovies(state.filters)
+
+          const newCache = new Map(state.cache)
+          newCache.set(cacheKey, {
+            results: allResults,
+            total: allResults.length,
+            timestamp: Date.now(),
           })
-        })
-      } catch (error) {
-        console.error("Failed to load search history:", error)
+
+          if (newCache.size > 50) {
+            const oldestKey = Array.from(newCache.keys())[0]
+            newCache.delete(oldestKey)
+          }
+
+          const page = loadMore ? state.page + 1 : 1
+          const startIndex = (page - 1) * RESULTS_PER_PAGE
+          const endIndex = startIndex + RESULTS_PER_PAGE
+          const pageResults = allResults.slice(startIndex, endIndex)
+
+          dispatch({
+            type: "SET_RESULTS",
+            payload: {
+              results: pageResults,
+              total: allResults.length,
+              page,
+              append: loadMore,
+            },
+          })
+
+          if (state.filters.query.trim()) {
+            dispatch({ type: "ADD_RECENT_SEARCH", payload: state.filters.query.trim() })
+          }
+        } catch (error) {
+          if (!controller.signal.aborted) {
+            console.error("Search error:", error)
+            dispatch({ type: "SET_LOADING", payload: false })
+          }
+        }
       }
+
+      searchTimeoutRef.current = setTimeout(performSearch, 300)
+    },
+    [state.filters, state.page, state.cache],
+  )
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
-  }, [])
 
-  // Save to localStorage when recent searches or history changes
-  useEffect(() => {
-    localStorage.setItem("moviedb_recent_searches", JSON.stringify(state.recentSearches))
-  }, [state.recentSearches])
+    searchTimeoutRef.current = setTimeout(() => {
+      const performSearch = async () => {
+        try {
+          dispatch({ type: "SET_LOADING", payload: true })
 
-  useEffect(() => {
-    localStorage.setItem("moviedb_search_history", JSON.stringify(state.searchHistory))
-  }, [state.searchHistory])
+          await new Promise((resolve) => setTimeout(resolve, 200))
 
-  const contextValue: SearchContextType = {
+          const allResults = filterAndSearchMovies(state.filters)
+
+          const page = 1
+          const startIndex = 0
+          const endIndex = RESULTS_PER_PAGE
+          const pageResults = allResults.slice(startIndex, endIndex)
+
+          dispatch({
+            type: "SET_RESULTS",
+            payload: {
+              results: pageResults,
+              total: allResults.length,
+              page,
+              append: false,
+            },
+          })
+
+          if (state.filters.query.trim()) {
+            dispatch({ type: "ADD_RECENT_SEARCH", payload: state.filters.query.trim() })
+          }
+        } catch (error) {
+          console.error("Search error:", error)
+          dispatch({ type: "SET_LOADING", payload: false })
+        }
+      }
+
+      performSearch()
+    }, 100)
+  }, [state.filters])
+
+  const value: SearchContextType = {
     state,
     setFilters,
     search,
     clearResults,
-    resetSearch,
     getSuggestions,
-    getCachedResults,
   }
 
-  return <SearchContext.Provider value={contextValue}>{children}</SearchContext.Provider>
+  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
 }
 
-export const useSearch = (): SearchContextType => {
+export function useSearch() {
   const context = useContext(SearchContext)
   if (!context) {
     throw new Error("useSearch must be used within a SearchProvider")

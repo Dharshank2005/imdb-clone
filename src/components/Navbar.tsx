@@ -2,107 +2,104 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Film, Search, Menu, X, User } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { motion, AnimatePresence } from "framer-motion"
+import { Search, Home, Film, Star, User, Menu, X } from "lucide-react"
 
-const Navbar = () => {
+const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
+  const location = useLocation()
   const navigate = useNavigate()
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
-    }
-  }
-
   const navItems = [
-    { label: "Movies", path: "/movies" },
-    { label: "Search", path: "/search" }, // Add this line
-    { label: "Top Rated", path: "/top-rated" },
-    { label: "Coming Soon", path: "/coming-soon" },
+    { path: "/", label: "Home", icon: Home },
+    { path: "/search", label: "Search", icon: Search },
+    { path: "/movies", label: "Movies", icon: Film },
+    { path: "/top-rated", label: "Top Rated", icon: Star },
+    { path: "/profile", label: "Profile", icon: User },
   ]
 
+  const handleSearchClick = () => {
+    navigate("/search")
+    setIsMenuOpen(false)
+  }
+
   return (
-    <nav className="bg-black/70 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-50">
+    <nav className="bg-gray-900/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-40">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 hover-glow">
-            <Film className="w-8 h-8 text-yellow-500" />
-            <span className="text-xl font-bold text-glow">MovieDB</span>
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <motion.div whileHover={{ scale: 1.05 }} className="bg-yellow-500 text-black p-2 rounded-lg">
+              <Film className="w-6 h-6" />
+            </motion.div>
+            <span className="text-xl font-bold text-white">MovieDB</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-5 h-5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search movies..."
-                className="bg-zinc-900/80 backdrop-blur-md text-white pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/50 w-64 transition-all"
-              />
-            </form>
-            <div className="flex items-center gap-6">
-              {navItems.map((item) => (
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-1">
+            {navItems.map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.path
+
+              return (
                 <Link
-                  key={item.label}
+                  key={item.path}
                   to={item.path}
-                  className="text-zinc-300 hover:text-white transition-colors hover-glow"
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? "bg-yellow-500 text-black font-medium"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                  }`}
                 >
-                  {item.label}
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
                 </Link>
-              ))}
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors hover-glow"
-              >
-                <User className="w-5 h-5" />
-                Profile
-              </Link>
-            </div>
+              )
+            })}
           </div>
 
-          <button className="md:hidden text-zinc-300 hover:text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          {/* Mobile Menu Button */}
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-gray-300 hover:text-white p-2">
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {isMenuOpen && (
-          <div className="md:hidden py-4">
-            <div className="flex flex-col gap-4">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-5 h-5" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search movies..."
-                  className="bg-zinc-900/80 backdrop-blur-md text-white pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/50 w-full"
-                />
-              </form>
-              {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  className="text-zinc-300 hover:text-white transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <User className="w-5 h-5" />
-                Profile
-              </Link>
-            </div>
-          </div>
-        )}
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden border-t border-gray-800 py-4"
+            >
+              <div className="space-y-2">
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = location.pathname === item.path
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isActive
+                          ? "bg-yellow-500 text-black font-medium"
+                          : "text-gray-300 hover:text-white hover:bg-gray-800"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   )

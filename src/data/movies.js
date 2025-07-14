@@ -1,3 +1,21 @@
+export const COMING_SOON_MOVIES = [
+  {
+    id: "6",
+    title: "Deadpool 3",
+    rating: 9.1,
+    image: "https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=800&q=80",
+    year: 2024,
+    genre: ["Action", "Comedy", "Adventure"],
+  },
+  {
+    id: "7",
+    title: "Kingdom of the Planet of the Apes",
+    rating: 8.3,
+    image: "https://images.unsplash.com/photo-1533973860717-d49dfd14cf64?auto=format&fit=crop&w=800&q=80",
+    year: 2024,
+    genre: ["Action", "Adventure", "Drama"],
+  },
+]
 export const MOVIES = [
   {
     id: "1",
@@ -186,21 +204,34 @@ export const MOVIES = [
   },
 ]
 
-export const COMING_SOON_MOVIES = [
-  {
-    id: "6",
-    title: "Deadpool 3",
-    rating: 9.1,
-    image: "https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=800&q=80",
-    year: 2024,
-    genre: ["Action", "Comedy", "Adventure"],
-  },
-  {
-    id: "7",
-    title: "Kingdom of the Planet of the Apes",
-    rating: 8.3,
-    image: "https://images.unsplash.com/photo-1533973860717-d49dfd14cf64?auto=format&fit=crop&w=800&q=80",
-    year: 2024,
-    genre: ["Action", "Adventure", "Drama"],
-  },
+export const GENRES = [
+  "Action",
+  "Adventure",
+  "Animation",
+  "Biography",
+  "Comedy",
+  "Crime",
+  "Documentary",
+  "Drama",
+  "Fantasy",
+  "History",
+  "Horror",
+  "Music",
+  "Mystery",
+  "Romance",
+  "Sci-Fi",
+  "Thriller",
+]
+
+export const ACTORS = [
+  "Timothée Chalamet",
+  "Zendaya",
+  "Cillian Murphy",
+  "Emily Blunt",
+  "Emma Stone",
+  "Willem Dafoe",
+  "Robert Pattinson",
+  "Zoë Kravitz",
+  "Leonardo DiCaprio",
+  "Robert De Niro",
 ]
