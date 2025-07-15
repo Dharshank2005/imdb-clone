@@ -2,14 +2,13 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, Home, Film, Star, User, Menu, X } from "lucide-react"
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
 
   const navItems = [
     { path: "/", label: "Home", icon: Home },
@@ -18,11 +17,6 @@ const Navbar: React.FC = () => {
     { path: "/top-rated", label: "Top Rated", icon: Star },
     { path: "/profile", label: "Profile", icon: User },
   ]
-
-  const handleSearchClick = () => {
-    navigate("/search")
-    setIsMenuOpen(false)
-  }
 
   return (
     <nav className="bg-gray-900/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-40">
